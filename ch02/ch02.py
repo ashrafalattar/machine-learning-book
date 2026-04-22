@@ -9,7 +9,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-
 # # Machine Learning with PyTorch and Scikit-Learn  
 # # -- Code Examples
 
@@ -91,53 +90,45 @@ check_packages(d)
 
 
 class Perceptron:
-    """Perceptron classifier.
+    """
+    Perceptron classifier.
 
     Parameters
-    ------------
+    ----------
     eta : float
-      Learning rate (between 0.0 and 1.0)
+        Learning rate (between 0.0 and 1.0)
     n_iter : int
-      Passes over the training dataset.
+        Passes over the training dataset (epochs)
     random_state : int
-      Random number generator seed for random weight
-      initialization.
-
-    Attributes
-    -----------
-    w_ : 1d-array
-      Weights after fitting.
-    b_ : Scalar
-      Bias unit after fitting.
-    errors_ : list
-      Number of misclassifications (updates) in each epoch.
-
+        Random number generator seed for random weight initialization
     """
+
     def __init__(self, eta=0.01, n_iter=50, random_state=1):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
 
     def fit(self, X, y):
-        """Fit training data.
+        """
+        Fit training data.
 
         Parameters
         ----------
-        X : {array-like}, shape = [n_examples, n_features]
-          Training vectors, where n_examples is the number of examples and
-          n_features is the number of features.
-        y : array-like, shape = [n_examples]
-          Target values.
+        X : array-like, shape = [n_samples, n_features]
+            Training vectors
+        y : array-like, shape = [n_samples]
+            Target values
 
         Returns
         -------
         self : object
-
         """
-        rgen = np.random.RandomState(self.random_state)
+        rgen = np.random.default_rng(self.random_state)
+
+        # Initialize weights and bias
         self.w_ = rgen.normal(loc=0.0, scale=0.01, size=X.shape[1])
-        self.b_ = np.float_(0.)
-        
+        self.b_ = 0.0
+
         self.errors_ = []
 
         for _ in range(self.n_iter):
@@ -148,6 +139,7 @@ class Perceptron:
                 self.b_ += update
                 errors += int(update != 0.0)
             self.errors_.append(errors)
+
         return self
 
     def net_input(self, X):
@@ -156,7 +148,7 @@ class Perceptron:
 
     def predict(self, X):
         """Return class label after unit step"""
-        return np.where(self.net_input(X) >= 0.0, 1, 0)
+        return np.where(self.net_input(X) >= 0.0, 1, -1)
 
 
 
@@ -305,75 +297,63 @@ plt.show()
 
 
 
+
+
 class AdalineGD:
-    """ADAptive LInear NEuron classifier.
+    """
+    ADAptive LInear NEuron classifier.
 
     Parameters
-    ------------
+    ----------
     eta : float
-      Learning rate (between 0.0 and 1.0)
+        Learning rate (between 0.0 and 1.0)
     n_iter : int
-      Passes over the training dataset.
+        Passes over the training dataset (epochs)
     random_state : int
-      Random number generator seed for random weight
-      initialization.
-
-
-    Attributes
-    -----------
-    w_ : 1d-array
-      Weights after fitting.
-    b_ : Scalar
-      Bias unit after fitting.
-    losses_ : list
-      Mean squared eror loss function values in each epoch.
-
+        Random number generator seed
     """
+
     def __init__(self, eta=0.01, n_iter=50, random_state=1):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
 
     def fit(self, X, y):
-        """ Fit training data.
+        """
+        Fit training data.
 
         Parameters
         ----------
-        X : {array-like}, shape = [n_examples, n_features]
-          Training vectors, where n_examples is the number of examples and
-          n_features is the number of features.
-        y : array-like, shape = [n_examples]
-          Target values.
+        X : array-like, shape = [n_samples, n_features]
+            Training vectors
+        y : array-like, shape = [n_samples]
+            Target values
 
         Returns
         -------
         self : object
-
         """
-        rgen = np.random.RandomState(self.random_state)
+        rgen = np.random.default_rng(self.random_state)
+
+        # Initialize weights and bias
         self.w_ = rgen.normal(loc=0.0, scale=0.01, size=X.shape[1])
-        self.b_ = np.float_(0.)
+        self.b_ = 0.0
+
         self.losses_ = []
 
-        for i in range(self.n_iter):
+        for _ in range(self.n_iter):
             net_input = self.net_input(X)
-            # Please note that the "activation" method has no effect
-            # in the code since it is simply an identity function. We
-            # could write `output = self.net_input(X)` directly instead.
-            # The purpose of the activation is more conceptual, i.e.,  
-            # in the case of logistic regression (as we will see later), 
-            # we could change it to
-            # a sigmoid function to implement a logistic regression classifier.
             output = self.activation(net_input)
-            errors = (y - output)
-            
-            #for w_j in range(self.w_.shape[0]):
-            #    self.w_[w_j] += self.eta * (2.0 * (X[:, w_j]*errors)).mean()
-            
-            self.w_ += self.eta * 2.0 * X.T.dot(errors) / X.shape[0]
-            self.b_ += self.eta * 2.0 * errors.mean()
-            loss = (errors**2).mean()
+            errors = y - output
+
+            # Gradient descent weight update
+            self.w_ += self.eta * X.T.dot(errors)
+            self.b_ += self.eta * errors.sum()
+
+            # Sum-of-squares loss
+            loss = (errors ** 2).sum() / 2.0
             self.losses_.append(loss)
+
         return self
 
     def net_input(self, X):
@@ -381,12 +361,12 @@ class AdalineGD:
         return np.dot(X, self.w_) + self.b_
 
     def activation(self, X):
-        """Compute linear activation"""
+        """Linear activation"""
         return X
 
     def predict(self, X):
         """Return class label after unit step"""
-        return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
+        return np.where(self.activation(self.net_input(X)) >= 0.0, 1, -1)
 
 
 
@@ -457,112 +437,113 @@ plt.show()
 
 
 
+
+
 class AdalineSGD:
-    """ADAptive LInear NEuron classifier.
+    """
+    ADAptive LInear NEuron classifier using stochastic gradient descent.
 
     Parameters
-    ------------
+    ----------
     eta : float
-      Learning rate (between 0.0 and 1.0)
+        Learning rate (between 0.0 and 1.0)
     n_iter : int
-      Passes over the training dataset.
+        Passes over the training dataset (epochs)
     shuffle : bool (default: True)
-      Shuffles training data every epoch if True to prevent cycles.
+        Shuffles training data every epoch if True
     random_state : int
-      Random number generator seed for random weight
-      initialization.
-
-
-    Attributes
-    -----------
-    w_ : 1d-array
-      Weights after fitting.
-    b_ : Scalar
-        Bias unit after fitting.
-    losses_ : list
-      Mean squared error loss function value averaged over all
-      training examples in each epoch.
-
-        
+        Random number generator seed
     """
+
     def __init__(self, eta=0.01, n_iter=10, shuffle=True, random_state=None):
         self.eta = eta
         self.n_iter = n_iter
-        self.w_initialized = False
         self.shuffle = shuffle
         self.random_state = random_state
-        
+        self.w_initialized = False
+
     def fit(self, X, y):
-        """ Fit training data.
-
-        Parameters
-        ----------
-        X : {array-like}, shape = [n_examples, n_features]
-          Training vectors, where n_examples is the number of examples and
-          n_features is the number of features.
-        y : array-like, shape = [n_examples]
-          Target values.
-
-        Returns
-        -------
-        self : object
-
+        """
+        Fit training data.
         """
         self._initialize_weights(X.shape[1])
         self.losses_ = []
-        for i in range(self.n_iter):
+
+        for _ in range(self.n_iter):
             if self.shuffle:
                 X, y = self._shuffle(X, y)
+
             losses = []
             for xi, target in zip(X, y):
-                losses.append(self._update_weights(xi, target))
+                loss = self._update_weights(xi, target)
+                losses.append(loss)
+
             avg_loss = np.mean(losses)
             self.losses_.append(avg_loss)
+
         return self
 
     def partial_fit(self, X, y):
-        """Fit training data without reinitializing the weights"""
+        """
+        Fit training data without reinitializing the weights.
+        """
         if not self.w_initialized:
             self._initialize_weights(X.shape[1])
+
         if y.ravel().shape[0] > 1:
             for xi, target in zip(X, y):
                 self._update_weights(xi, target)
         else:
             self._update_weights(X, y)
+
         return self
 
     def _shuffle(self, X, y):
-        """Shuffle training data"""
+        """
+        Shuffle training data.
+        """
         r = self.rgen.permutation(len(y))
         return X[r], y[r]
-    
+
     def _initialize_weights(self, m):
-        """Initialize weights to small random numbers"""
-        self.rgen = np.random.RandomState(self.random_state)
+        """
+        Initialize weights and bias.
+        """
+        self.rgen = np.random.default_rng(self.random_state)
         self.w_ = self.rgen.normal(loc=0.0, scale=0.01, size=m)
-        self.b_ = np.float_(0.)
+        self.b_ = 0.0
         self.w_initialized = True
-        
+
     def _update_weights(self, xi, target):
-        """Apply Adaline learning rule to update the weights"""
+        """
+        Apply Adaline learning rule.
+        """
         output = self.activation(self.net_input(xi))
-        error = (target - output)
-        self.w_ += self.eta * 2.0 * xi * (error)
-        self.b_ += self.eta * 2.0 * error
-        loss = error**2
+        error = target - output
+
+        self.w_ += self.eta * xi * error
+        self.b_ += self.eta * error
+
+        loss = 0.5 * error ** 2
         return loss
-    
+
     def net_input(self, X):
-        """Calculate net input"""
+        """
+        Calculate net input.
+        """
         return np.dot(X, self.w_) + self.b_
 
     def activation(self, X):
-        """Compute linear activation"""
+        """
+        Linear activation.
+        """
         return X
 
     def predict(self, X):
-        """Return class label after unit step"""
-        return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
+        """
+        Return class label after unit step.
+        """
+        return np.where(self.net_input(X) >= 0.0, 1, -1)
 
 
 
