@@ -314,7 +314,7 @@ class LogisticRegressionGD:
     b_ : Scalar
       Bias unit after fitting.
     losses_ : list
-      Log loss function values in each epoch.
+       Log loss function values in each epoch.
 
     """
     def __init__(self, eta=0.01, n_iter=50, random_state=1):
@@ -349,7 +349,7 @@ class LogisticRegressionGD:
             errors = (y - output)
             self.w_ += self.eta * X.T.dot(errors) / X.shape[0]
             self.b_ += self.eta * errors.mean()
-            loss = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) / X.shape[0]
+            loss = (-y.dot(np.log(output)) - (1 - y).dot(np.log(1 - output))) / X.shape[0]
             self.losses_.append(loss)
         return self
 
