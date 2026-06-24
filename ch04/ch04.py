@@ -18,9 +18,11 @@ import matplotlib.pyplot as plt
 from sklearn.base import clone
 from itertools import combinations
 from sklearn.metrics import accuracy_score
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
+import sklearn
 
 # # Machine Learning with PyTorch and Scikit-Learn  
 # # -- Code Examples
@@ -593,26 +595,30 @@ class SBS:
 
 knn = KNeighborsClassifier(n_neighbors=5)
 
-# selecting features
-sbs = SBS(knn, k_features=1)
-sbs.fit(X_train_std, y_train)
+sbs = SFS(knn,
+          k_features=1,
+          forward=False,
+          scoring='accuracy',
+          cv=5)
+
+sbs = sbs.fit(X_train_std, y_train)
 
 # plotting performance of feature subsets
-k_feat = [len(k) for k in sbs.subsets_]
+k_feat = [len(sbs.subsets_[k]['feature_idx']) for k in sbs.subsets_]
+scores = [sbs.subsets_[k]['avg_score'] for k in sbs.subsets_]
 
-plt.plot(k_feat, sbs.scores_, marker='o')
+plt.plot(k_feat, scores, marker='o')
 plt.ylim([0.7, 1.02])
 plt.ylabel('Accuracy')
 plt.xlabel('Number of features')
 plt.grid()
 plt.tight_layout()
-# plt.savefig('figures/04_09.png', dpi=300)
 plt.show()
 
 
 
 
-k3 = list(sbs.subsets_[10])
+k3 = list(sbs.subsets_[10]['feature_idx'])
 print(df_wine.columns[1:][k3])
 
 
@@ -638,29 +644,30 @@ print('Test accuracy:', knn.score(X_test_std[:, k3], y_test))
 
 feat_labels = df_wine.columns[1:]
 
-forest = RandomForestClassifier(n_estimators=500,
-                                random_state=1)
-
+forest = RandomForestClassifier(n_estimators=500, random_state=1)
 forest.fit(X_train, y_train)
-importances = forest.feature_importances_
 
+importances = forest.feature_importances_
 indices = np.argsort(importances)[::-1]
 
+# Print ranking
 for f in range(X_train.shape[1]):
-    print("%2d) %-*s %f" % (f + 1, 30, 
-                            feat_labels[indices[f]], 
-                            importances[indices[f]]))
+    print(f"{f+1:2d}) {feat_labels[indices[f]]:30s} {importances[indices[f]]:.6f}")
 
-plt.title('Feature importance')
-plt.bar(range(X_train.shape[1]), 
+# Plot
+plt.figure(figsize=(10, 6))
+plt.title('Feature Importance')
+
+plt.bar(range(X_train.shape[1]),
         importances[indices],
         align='center')
 
-plt.xticks(range(X_train.shape[1]), 
-           feat_labels[indices], rotation=90)
+plt.xticks(range(X_train.shape[1]),
+           feat_labels[indices],
+           rotation=90)
+
 plt.xlim([-1, X_train.shape[1]])
 plt.tight_layout()
-# plt.savefig('figures/04_10.png', dpi=300)
 plt.show()
 
 
@@ -693,5 +700,11 @@ for f in range(X_selected.shape[1]):
 # Readers may ignore the next cell.
 
 
+
+
+
+
+
+print(sklearn.__version__)
 
 
